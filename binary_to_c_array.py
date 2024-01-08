@@ -2,7 +2,7 @@ import sys
 
 # Check if the user provided the binary file as a command-line argument
 if len(sys.argv) != 2:
-    print("Usage: python binary_to_c_array.py <binary_file>")
+    print("Usage: python3 binary_to_c_array.py <binary_file>")
     sys.exit(1)
 
 # Get the binary file path from the command-line argument
