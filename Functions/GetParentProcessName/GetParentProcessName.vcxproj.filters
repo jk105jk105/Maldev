@@ -15,7 +15,7 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="GetParentProcessId.c">
+    <ClCompile Include="GetParentProcessName.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
