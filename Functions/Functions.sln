@@ -7,6 +7,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "GetParentProcessId", "Funct
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "GetParentProcessName", "GetParentProcessName\GetParentProcessName.vcxproj", "{5F897606-D34A-4111-9656-65EF77E4B8B9}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "GetParentProcessId", "GetParentProcessId\GetParentProcessId.vcxproj", "{37FA684F-52E0-42B8-8333-4DA734EC3D1E}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -31,6 +33,14 @@ Global
 		{5F897606-D34A-4111-9656-65EF77E4B8B9}.Release|x64.Build.0 = Release|x64
 		{5F897606-D34A-4111-9656-65EF77E4B8B9}.Release|x86.ActiveCfg = Release|Win32
 		{5F897606-D34A-4111-9656-65EF77E4B8B9}.Release|x86.Build.0 = Release|Win32
+		{37FA684F-52E0-42B8-8333-4DA734EC3D1E}.Debug|x64.ActiveCfg = Debug|x64
+		{37FA684F-52E0-42B8-8333-4DA734EC3D1E}.Debug|x64.Build.0 = Debug|x64
+		{37FA684F-52E0-42B8-8333-4DA734EC3D1E}.Debug|x86.ActiveCfg = Debug|Win32
+		{37FA684F-52E0-42B8-8333-4DA734EC3D1E}.Debug|x86.Build.0 = Debug|Win32
+		{37FA684F-52E0-42B8-8333-4DA734EC3D1E}.Release|x64.ActiveCfg = Release|x64
+		{37FA684F-52E0-42B8-8333-4DA734EC3D1E}.Release|x64.Build.0 = Release|x64
+		{37FA684F-52E0-42B8-8333-4DA734EC3D1E}.Release|x86.ActiveCfg = Release|Win32
+		{37FA684F-52E0-42B8-8333-4DA734EC3D1E}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
