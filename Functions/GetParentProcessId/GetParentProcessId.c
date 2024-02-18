@@ -24,6 +24,7 @@ DWORD GetParentProcessId(DWORD pid) {
         if (pe32.th32ProcessID == pid) {
             // Get ppid of matching pid
             parentPID = pe32.th32ParentProcessID;
+            printf("Parent Process ID - %lu\n", parentPID);
             break;
         }
     } while (Process32Next(hSnapshot, &pe32));
@@ -37,6 +38,8 @@ int main() {
     DWORD ppid = GetParentProcessId(pid);
 
     printf("Parent Process ID - %lu\n", ppid);
+    printf("Press Enter to Quit\n");
+    getchar();
 
     return 0;
 }
