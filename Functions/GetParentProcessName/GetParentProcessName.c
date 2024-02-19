@@ -1,6 +1,5 @@
 #include <Windows.h>
 #include <stdio.h>
-#include <Psapi.h>
 #include <tchar.h>
 #include <TlHelp32.h>
 
