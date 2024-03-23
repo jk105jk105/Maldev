@@ -129,6 +129,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="HellsGate.c" />
+    <ClCompile Include="main.c" />
   </ItemGroup>
   <ItemGroup>
     <MASM Include="HellAsm.asm">
