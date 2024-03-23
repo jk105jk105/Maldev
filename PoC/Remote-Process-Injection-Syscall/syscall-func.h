@@ -2,13 +2,10 @@
 #include <Windows.h>
 
 /*
-
 Header files to define function pointers for the syscalls
 Many are missing from official documentation. You will have to find them from unofficial ones.
 Credit - Maldev Academy
-
 */
-
 
 typedef struct _UNICODE_STRING
 {

