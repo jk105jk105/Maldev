@@ -1,7 +1,5 @@
-#pragma once
 #include <Windows.h>
 #include <stdio.h>
-#include <Tlhelp32.h>
 #include "structs.h"
 
 /*
