@@ -64,14 +64,14 @@ int main() {
     // Prepare parameters
     OBJECT_ATTRIBUTES objAttr;
     UNICODE_STRING uniString;
-    HANDLE fileHandle;
+    HANDLE hFile;
     IO_STATUS_BLOCK ioStatusBlock;
 
     RtlInitUnicodeString(&uniString, L"\\??\\C:\\windows\\system32\\ntdll.dll");
     InitializeObjectAttributes(&objAttr, &uniString, OBJ_CASE_INSENSITIVE, NULL, NULL);
 
     NTSTATUS ntstatus = pNtCreateFile(
-        &fileHandle,
+        &hFile,
         FILE_READ_DATA | FILE_WRITE_DATA,
         &objAttr,
         &ioStatusBlock,
@@ -91,7 +91,7 @@ int main() {
     }
 
     // Close the file handle
-    CloseHandle(fileHandle);
+    CloseHandle(hFile);
 
     // Free the library
     FreeLibrary(hNtdll);
