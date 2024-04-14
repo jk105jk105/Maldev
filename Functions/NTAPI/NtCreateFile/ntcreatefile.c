@@ -61,18 +61,28 @@ int main() {
     // Get NTAPI address
     fnNtCreateFile	pNtCreateFile = (fnNtCreateFile)GetProcAddress(hNtdll, "NtCreateFile");
 
-    // Prepare parameters
+    if (pNtCreateFile == NULL) {
+        DWORD dwError = GetLastError();
+        printf("Error: GetProcAddress failed with error code %lu\n", dwError);
+        return 1;
+    }
+
+    // Prepare parameters for NtCreateFile
     OBJECT_ATTRIBUTES objAttr;
     UNICODE_STRING uniString;
     HANDLE hFile;
     IO_STATUS_BLOCK ioStatusBlock;
 
+    // Initialize UNICODE_STRING with file path
     RtlInitUnicodeString(&uniString, L"\\??\\C:\\windows\\system32\\ntdll.dll");
+
+    // Initialize OBJECT_ATTRIBUTES with UNICODE_STRING
     InitializeObjectAttributes(&objAttr, &uniString, OBJ_CASE_INSENSITIVE, NULL, NULL);
 
+    // Call NtCreateFile
     NTSTATUS ntstatus = pNtCreateFile(
         &hFile,
-        FILE_READ_DATA | FILE_WRITE_DATA,
+        FILE_GENERIC_READ,
         &objAttr,
         &ioStatusBlock,
         NULL,
@@ -84,9 +94,11 @@ int main() {
         0
     );
 
+    // Check status
     if (ntstatus != STATUS_SUCCESS) {
         // Handle error
         FreeLibrary(hNtdll);
+        printf("[!] NtCreateFile Failed With Error : 0x%0.8X \n", ntstatus);
         return 1;
     }
 
