@@ -87,9 +87,9 @@ int main() {
         &ioStatusBlock,
         NULL,
         FILE_ATTRIBUTE_NORMAL,
-        FILE_SHARE_READ | FILE_SHARE_WRITE,
+        FILE_SHARE_READ,
         FILE_OPEN_IF,
-        FILE_NON_DIRECTORY_FILE | FILE_SYNCHRONOUS_IO_NONALERT,
+        FILE_NON_DIRECTORY_FILE,
         NULL,
         0
     );
