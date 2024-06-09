@@ -24,6 +24,7 @@
     <ProjectGuid>{ddb9922b-f452-4d45-a6c2-c1b240555e1b}</ProjectGuid>
     <RootNamespace>RemoteProcessInjectionSyscall</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+    <ProjectName>Remote-Process-Injection-NTAPI</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -127,7 +128,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="remote-process-injection-syscall.c" />
+    <ClCompile Include="remote-process-injection-ntapi.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="syscall-func.h" />

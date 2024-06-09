@@ -15,7 +15,7 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="remote-process-injection-syscall.c">
+    <ClCompile Include="remote-process-injection-ntapi.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
