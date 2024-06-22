@@ -460,6 +460,14 @@ typedef NTSTATUS(NTAPI* fnNtOpenProcess)(
     PCLIENT_ID         ClientId
 );
 
+// https://learn.microsoft.com/en-us/windows/win32/devnotes/ntopenthread
+typedef NTSTATUS(NTAPI* fnNtOpenThread)(
+    PHANDLE            ThreadHandle,
+    ACCESS_MASK        DesiredAccess,
+    POBJECT_ATTRIBUTES ObjectAttributes,
+    PCLIENT_ID         ClientId
+);
+
 // https://learn.microsoft.com/en-us/windows-hardware/drivers/ddi/ntifs/nf-ntifs-ntallocatevirtualmemory
 typedef NTSTATUS(NTAPI* fnNtAllocateVirtualMemory)(
 

